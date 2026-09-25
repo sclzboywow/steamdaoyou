@@ -31,6 +31,7 @@ import type {
   AlchemyFormulaPattern,
   PillFamily,
 } from '@shared/types/consumable';
+import type { RealmType } from '@shared/types/constants';
 import type { MailAttachment } from '@shared/types/mail';
 import { sql } from 'drizzle-orm';
 import {
@@ -1573,6 +1574,11 @@ export const reputationShopItems = pgTable(
     price: integer('price').notNull(),
     quantity: integer('quantity').notNull().default(1),
     perUserLimit: integer('per_user_limit'),
+    minRealm: varchar('min_realm', { length: 20 })
+      .$type<RealmType>()
+      .notNull()
+      .default('炼气'),
+    maxRealm: varchar('max_realm', { length: 20 }).$type<RealmType>(),
     status: varchar('status', { length: 20 }).notNull().default('active'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdBy: uuid('created_by').notNull(),
@@ -1602,6 +1608,11 @@ export const sectShopItems = pgTable(
     price: integer('price').notNull(),
     quantity: integer('quantity').notNull().default(1),
     perUserLimit: integer('per_user_limit'),
+    minRealm: varchar('min_realm', { length: 20 })
+      .$type<RealmType>()
+      .notNull()
+      .default('炼气'),
+    maxRealm: varchar('max_realm', { length: 20 }).$type<RealmType>(),
     status: varchar('status', { length: 20 }).notNull().default('active'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdBy: uuid('created_by').notNull(),

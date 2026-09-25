@@ -1,3 +1,5 @@
+import { REALM_ORDER, type RealmType } from '@shared/types/constants';
+
 const PURCHASE_WEEK_TIME_ZONE = 'Asia/Shanghai';
 
 export function getItemExchangePurchaseWeek(date = new Date()): string {
@@ -16,4 +18,16 @@ export function getItemExchangePurchaseWeek(date = new Date()): string {
   const dayOffset = (localDate.getUTCDay() + 6) % 7;
   localDate.setUTCDate(localDate.getUTCDate() - dayOffset);
   return localDate.toISOString().slice(0, 10);
+}
+
+export function isItemExchangeRealmEligible(
+  cultivatorRealm: RealmType,
+  minRealm: RealmType,
+  maxRealm: RealmType | null,
+): boolean {
+  const current = REALM_ORDER[cultivatorRealm];
+  return (
+    current >= REALM_ORDER[minRealm] &&
+    (maxRealm === null || current <= REALM_ORDER[maxRealm])
+  );
 }

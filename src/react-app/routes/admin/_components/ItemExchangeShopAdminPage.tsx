@@ -12,6 +12,7 @@ import {
   type ItemExchangeShopItemView,
 } from '@shared/contracts/itemExchangeShop';
 import type { ItemGrant } from '@shared/inventory';
+import { REALM_VALUES, type RealmType } from '@shared/types/constants';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminDialog } from './AdminDialog';
 import { AdminPageHeader } from './AdminPage';
@@ -23,6 +24,8 @@ interface DraftState {
   price: string;
   quantity: string;
   perUserLimit: string;
+  minRealm: RealmType;
+  maxRealm: RealmType | '';
   status: 'active' | 'archived';
   sortOrder: string;
 }
@@ -33,6 +36,8 @@ const emptyDraft: DraftState = {
   price: '1000',
   quantity: '1',
   perUserLimit: '',
+  minRealm: '炼气',
+  maxRealm: '',
   status: 'active',
   sortOrder: '0',
 };
@@ -53,6 +58,8 @@ function toMutation(draft: DraftState): ItemExchangeShopItemMutation {
     perUserLimit: draft.perUserLimit.trim()
       ? parsePositiveInt(draft.perUserLimit, '每周限购')
       : null,
+    minRealm: draft.minRealm,
+    maxRealm: draft.maxRealm || null,
     status: draft.status,
     sortOrder: Number(draft.sortOrder),
   });
@@ -128,6 +135,8 @@ export function ItemExchangeShopAdminPage({
       price: String(item.price),
       quantity: String(item.quantity),
       perUserLimit: item.perUserLimit ? String(item.perUserLimit) : '',
+      minRealm: item.minRealm,
+      maxRealm: item.maxRealm ?? '',
       status: item.status,
       sortOrder: String(item.sortOrder),
     });
@@ -247,7 +256,9 @@ export function ItemExchangeShopAdminPage({
                   <span className="font-mono">{item.quantity}</span> 件
                 </p>
                 <p className="text-ink-secondary text-xs">
-                  每周限购 {item.perUserLimit ?? '不限'} · 排序 {item.sortOrder}
+                  每周限购 {item.perUserLimit ?? '不限'} · 开放境界 {item.minRealm}
+                  {item.maxRealm ? `～${item.maxRealm}` : '以上'} · 排序{' '}
+                  {item.sortOrder}
                 </p>
                 <div className="flex gap-2">
                   <InkButton disabled={saving} onClick={() => edit(item)}>
@@ -352,6 +363,39 @@ export function ItemExchangeShopAdminPage({
                   setDraft((current) => ({ ...current, sortOrder }))
                 }
               />
+              <InkSelect
+                label="最低境界"
+                value={draft.minRealm}
+                onChange={(minRealm) =>
+                  setDraft((current) => ({
+                    ...current,
+                    minRealm: minRealm as RealmType,
+                  }))
+                }
+              >
+                {REALM_VALUES.map((realm) => (
+                  <option key={realm} value={realm}>
+                    {realm}
+                  </option>
+                ))}
+              </InkSelect>
+              <InkSelect
+                label="最高境界"
+                value={draft.maxRealm}
+                onChange={(maxRealm) =>
+                  setDraft((current) => ({
+                    ...current,
+                    maxRealm: maxRealm as RealmType | '',
+                  }))
+                }
+              >
+                <option value="">不限</option>
+                {REALM_VALUES.map((realm) => (
+                  <option key={realm} value={realm}>
+                    {realm}
+                  </option>
+                ))}
+              </InkSelect>
               <InkSelect
                 label="状态"
                 value={draft.status}

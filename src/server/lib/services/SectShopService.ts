@@ -5,6 +5,7 @@ import {
   type DbTransaction,
 } from '@server/lib/drizzle/db';
 import { sectShopItems, sectShopPurchases } from '@server/lib/drizzle/schema';
+import { readCultivatorRealm } from '@server/lib/services/cultivator/CultivatorFactsReader';
 import {
   RewardItemSchema,
   materializeRewardItem,
@@ -16,7 +17,10 @@ import type {
   SectShopItemStatus,
 } from '@shared/contracts/sectShop';
 import { SECT_SHOP_MAX_PRICE } from '@shared/contracts/sectShop';
-import { getItemExchangePurchaseWeek } from '@shared/lib/itemExchangeShop';
+import {
+  getItemExchangePurchaseWeek,
+  isItemExchangeRealmEligible,
+} from '@shared/lib/itemExchangeShop';
 import { and, asc, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { assertInventoryIdle, grantInventory } from './InventoryService';
@@ -78,6 +82,8 @@ async function buildView(args: {
     price: args.row.price,
     quantity: args.row.quantity,
     perUserLimit: args.row.perUserLimit,
+    minRealm: args.row.minRealm,
+    maxRealm: args.row.maxRealm,
     status: args.row.status as SectShopItemStatus,
     sortOrder: args.row.sortOrder,
     purchasedCount,
@@ -122,6 +128,14 @@ export async function listSectShopItems(
   if (args.userVisibleOnly) {
     whereConditions.push(eq(sectShopItems.status, 'active'));
   }
+  const cultivatorRealm = args.userVisibleOnly
+    ? args.cultivatorId
+      ? (await readCultivatorRealm(args.cultivatorId, q)).realm
+      : null
+    : null;
+  if (args.userVisibleOnly && !cultivatorRealm) {
+    throw new Error('玩家可见商店必须提供 cultivatorId');
+  }
   const query = q
     .select({ row: sectShopItems })
     .from(sectShopItems)
@@ -134,7 +148,15 @@ export async function listSectShopItems(
     q,
     rows
       .filter(
-        (entry) => !args.userVisibleOnly || entry.row.itemSnapshot !== null,
+        (entry) =>
+          !args.userVisibleOnly ||
+          (entry.row.itemSnapshot !== null &&
+            cultivatorRealm !== null &&
+            isItemExchangeRealmEligible(
+              cultivatorRealm,
+              entry.row.minRealm,
+              entry.row.maxRealm,
+            )),
       )
       .map(
         (entry) => () =>
@@ -148,9 +170,21 @@ export async function listSectShopItems(
   );
 }
 
-function assertPurchasable(row: ShopItemRow): void {
+function assertPurchasable(
+  row: ShopItemRow,
+  cultivatorRealm: Parameters<typeof isItemExchangeRealmEligible>[0],
+): void {
   if (row.status !== 'active' || !row.itemSnapshot) {
     throw new SectShopError(400, '此物暂不可兑换');
+  }
+  if (
+    !isItemExchangeRealmEligible(
+      cultivatorRealm,
+      row.minRealm,
+      row.maxRealm,
+    )
+  ) {
+    throw new SectShopError(403, '当前境界尚无法兑换此物');
   }
   if (
     !Number.isInteger(row.price) ||
@@ -249,7 +283,11 @@ export async function buySectShopItem(params: {
 }> {
   const loaded = await loadShopItem(params.id, params.tx);
   if (!loaded) throw new SectShopError(404, '宗门宝库商品不存在');
-  assertPurchasable(loaded.row);
+  const { realm } = await readCultivatorRealm(
+    params.cultivatorId,
+    params.tx,
+  );
+  assertPurchasable(loaded.row, realm);
   const purchasedCount = await countPurchases(
     params.cultivatorId,
     loaded.row.id,

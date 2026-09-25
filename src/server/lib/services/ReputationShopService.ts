@@ -8,6 +8,7 @@ import {
   reputationShopItems,
   reputationShopPurchases,
 } from '@server/lib/drizzle/schema';
+import { readCultivatorRealm } from '@server/lib/services/cultivator/CultivatorFactsReader';
 import { resourceEngine } from '@server/lib/services/resource/ResourceEngine';
 import {
   RewardItemSchema,
@@ -20,7 +21,10 @@ import {
   type ReputationShopItemStatus,
   type ReputationShopItemView,
 } from '@shared/contracts/reputationShop';
-import { getItemExchangePurchaseWeek } from '@shared/lib/itemExchangeShop';
+import {
+  getItemExchangePurchaseWeek,
+  isItemExchangeRealmEligible,
+} from '@shared/lib/itemExchangeShop';
 import { and, asc, desc, eq, sql, type SQL } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { grantInventory } from './InventoryService';
@@ -87,6 +91,8 @@ async function buildView(args: {
     price: args.row.price,
     quantity: args.row.quantity,
     perUserLimit: args.row.perUserLimit,
+    minRealm: args.row.minRealm,
+    maxRealm: args.row.maxRealm,
     status: args.row.status as ReputationShopItemStatus,
     sortOrder: args.row.sortOrder,
     purchasedCount,
@@ -132,6 +138,14 @@ export async function listReputationShopItems(
   if (args.userVisibleOnly) {
     whereConditions.push(eq(reputationShopItems.status, 'active'));
   }
+  const cultivatorRealm = args.userVisibleOnly
+    ? args.cultivatorId
+      ? (await readCultivatorRealm(args.cultivatorId, q)).realm
+      : null
+    : null;
+  if (args.userVisibleOnly && !cultivatorRealm) {
+    throw new Error('玩家可见商店必须提供 cultivatorId');
+  }
 
   const query = q
     .select({ row: reputationShopItems })
@@ -150,7 +164,15 @@ export async function listReputationShopItems(
     q,
     rows
       .filter(
-        (entry) => !args.userVisibleOnly || entry.row.itemSnapshot !== null,
+        (entry) =>
+          !args.userVisibleOnly ||
+          (entry.row.itemSnapshot !== null &&
+            cultivatorRealm !== null &&
+            isItemExchangeRealmEligible(
+              cultivatorRealm,
+              entry.row.minRealm,
+              entry.row.maxRealm,
+            )),
       )
       .map(
         (entry) => () =>
@@ -163,9 +185,21 @@ export async function listReputationShopItems(
   );
 }
 
-function assertStoredShopItem(row: ShopItemRow): void {
+function assertStoredShopItem(
+  row: ShopItemRow,
+  cultivatorRealm: Parameters<typeof isItemExchangeRealmEligible>[0],
+): void {
   if (row.status !== 'active' || !row.itemSnapshot) {
     throw new ReputationShopError(400, '此物暂不可兑换');
+  }
+  if (
+    !isItemExchangeRealmEligible(
+      cultivatorRealm,
+      row.minRealm,
+      row.maxRealm,
+    )
+  ) {
+    throw new ReputationShopError(403, '当前境界尚无法兑换此物');
   }
   if (!Number.isInteger(row.price) || row.price < 1) {
     throw new ReputationShopError(400, '商品声望价格配置异常');
@@ -200,6 +234,8 @@ export async function createReputationShopItem(params: {
       price: params.input.price,
       quantity,
       perUserLimit: params.input.perUserLimit ?? null,
+      minRealm: params.input.minRealm,
+      maxRealm: params.input.maxRealm,
       status: params.input.status,
       sortOrder: params.input.sortOrder,
       createdBy: params.userId,
@@ -228,6 +264,8 @@ export async function updateReputationShopItem(params: {
       price: params.input.price,
       quantity,
       perUserLimit: params.input.perUserLimit ?? null,
+      minRealm: params.input.minRealm,
+      maxRealm: params.input.maxRealm,
       status: params.input.status,
       sortOrder: params.input.sortOrder,
       updatedBy: params.userId,
@@ -277,7 +315,11 @@ export async function buyReputationShopItem(params: {
   if (!loaded) {
     throw new ReputationShopError(404, '万界商行商品不存在');
   }
-  assertStoredShopItem(loaded.row);
+  const { realm } = await readCultivatorRealm(
+    params.cultivatorId,
+    params.tx,
+  );
+  assertStoredShopItem(loaded.row, realm);
 
   const purchaseWeek = getReputationShopPurchaseWeek();
   const purchasedCount = await countPurchases(

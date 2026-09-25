@@ -111,7 +111,7 @@ function failure(c: Context<AppEnv>, error: unknown) {
   if (error instanceof SectShopError)
     return c.json(
       { success: false as const, error: error.message },
-      error.status as 400 | 404 | 500,
+      error.status as 400 | 403 | 404 | 500,
     );
   if (error instanceof InventoryError)
     return c.json({ success: false as const, error: error.message }, 409);
