@@ -32,7 +32,8 @@
     "steam:build": "bun run steam:icons && bunx tauri build --features steamworks-native",
     "admin:migrate": "bun run scripts/admin-ops-migrate.ts",
     "materials:bootstrap": "bun run scripts/bootstrap-material-library.ts",
-    "materials:audit": "bun run scripts/audit-material-library.ts"
+    "materials:audit": "bun run scripts/audit-material-library.ts",
+    "shops:seed": "bun run scripts/seed-exchange-shops.ts"
   },
   "dependencies": {
     "@ai-sdk/alibaba": "^2.0.45",
