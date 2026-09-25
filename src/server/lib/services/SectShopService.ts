@@ -7,9 +7,11 @@ import {
 import { sectShopItems, sectShopPurchases } from '@server/lib/drizzle/schema';
 import { readCultivatorRealm } from '@server/lib/services/cultivator/CultivatorFactsReader';
 import {
+  AdminRewardItemSchema,
   RewardItemSchema,
   materializeRewardItem,
   rewardDisplayItem,
+  rewardOperationalUnavailableReason,
 } from '@shared/contracts/adminRewards';
 import type {
   SectShopItemData,
@@ -60,6 +62,18 @@ async function countPurchases(
       ),
     );
   return Number(row?.count ?? 0);
+}
+
+function isOperationalShopReward(row: ShopItemRow): boolean {
+  if (!row.itemSnapshot) return false;
+  const parsed = RewardItemSchema.safeParse({
+    ...row.itemSnapshot,
+    quantity: row.quantity,
+  });
+  return (
+    parsed.success &&
+    rewardOperationalUnavailableReason(parsed.data) === undefined
+  );
 }
 
 async function buildView(args: {
@@ -151,6 +165,7 @@ export async function listSectShopItems(
         (entry) =>
           !args.userVisibleOnly ||
           (entry.row.itemSnapshot !== null &&
+            isOperationalShopReward(entry.row) &&
             cultivatorRealm !== null &&
             isItemExchangeRealmEligible(
               cultivatorRealm,
@@ -199,7 +214,12 @@ function assertPurchasable(
   ) {
     throw new SectShopError(400, '商品每周限购配置异常');
   }
-  RewardItemSchema.parse({ ...row.itemSnapshot, quantity: row.quantity });
+  const grant = RewardItemSchema.parse({
+    ...row.itemSnapshot,
+    quantity: row.quantity,
+  });
+  const unavailableReason = rewardOperationalUnavailableReason(grant);
+  if (unavailableReason) throw new SectShopError(400, unavailableReason);
 }
 
 export async function createSectShopItem(params: {
@@ -207,7 +227,7 @@ export async function createSectShopItem(params: {
   userId: string;
 }): Promise<SectShopItemData> {
   const { item, ...input } = params.input;
-  const { quantity, ...itemSnapshot } = RewardItemSchema.parse(item);
+  const { quantity, ...itemSnapshot } = AdminRewardItemSchema.parse(item);
   const q = getExecutor();
   const [row] = await q
     .insert(sectShopItems)
@@ -231,7 +251,7 @@ export async function updateSectShopItem(params: {
   userId: string;
 }): Promise<SectShopItemData | null> {
   const { item, ...input } = params.input;
-  const { quantity, ...itemSnapshot } = RewardItemSchema.parse(item);
+  const { quantity, ...itemSnapshot } = AdminRewardItemSchema.parse(item);
   const q = getExecutor();
   const [row] = await q
     .update(sectShopItems)

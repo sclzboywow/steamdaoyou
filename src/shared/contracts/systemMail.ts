@@ -4,7 +4,7 @@ import {
   SPONSORSHIP_TIER_META,
 } from '../lib/sponsorship';
 import { REALM_STAGE_VALUES, REALM_VALUES } from '../types/constants';
-import { RewardSelectionsSchema } from './adminRewards';
+import { AdminRewardSelectionsSchema } from './adminRewards';
 
 const InstantSchema = z.string().datetime({ offset: true });
 export const MailRealmSchema = z
@@ -62,7 +62,7 @@ export const SystemMailInputSchema = z
   .object({
     title: z.string().trim().min(1, '请填写邮件标题').max(200),
     content: z.string().trim().min(1, '请填写邮件正文').max(10000),
-    rewardSelections: RewardSelectionsSchema,
+    rewardSelections: AdminRewardSelectionsSchema,
     conditions: SystemMailConditionsSchema,
     startsAt: InstantSchema,
     endsAt: InstantSchema,

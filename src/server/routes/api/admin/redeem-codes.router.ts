@@ -9,7 +9,7 @@ import {
 } from '@server/lib/redeem/code';
 import { describeRedeemCodeReward } from '@server/lib/redeem/reward';
 import {
-  RewardSelectionsSchema,
+  AdminRewardSelectionsSchema,
   rewardAttachments as buildRewardAttachments,
 } from '@shared/contracts/adminRewards';
 import type { MailAttachment } from '@shared/types/mail';
@@ -32,7 +32,7 @@ function isSnapshotRewardPresetId(value: string | null | undefined): boolean {
 const CreateRedeemCodeSchema = z
   .object({
     code: z.string().trim().max(64).optional(),
-    rewardSelections: RewardSelectionsSchema.min(1, '至少选择一项奖励'),
+    rewardSelections: AdminRewardSelectionsSchema.min(1, '至少选择一项奖励'),
     mailTitle: z.string().trim().min(1).max(200),
     mailContent: z.string().trim().min(1).max(10000),
     totalLimit: z.number().int().min(1).max(100000000).nullable().optional(),

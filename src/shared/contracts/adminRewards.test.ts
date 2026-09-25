@@ -11,6 +11,8 @@ import {
   MailAttachmentsSchema,
 } from '../lib/itemLibrary';
 import {
+  AdminRewardItemSchema,
+  AdminRewardSelectionsSchema,
   RewardItemSchema,
   RewardSelectionsSchema,
   materializeRewardAttachments,
@@ -126,6 +128,36 @@ describe('current admin rewards', () => {
       }).success,
     ).toBe(false);
   });
+  it('blocks skill_manual from new operational rewards without breaking historical parsing', () => {
+    const skillManual = {
+      definitionId: 'material.v1',
+      quantity: 1,
+      instanceData: {
+        name: '引气术',
+        type: 'skill_manual',
+        rank: '凡品',
+        element: '木',
+        description: '引动灵气、温养经脉的旧制入门秘术。',
+      },
+    };
+    const gongfaManual = {
+      ...skillManual,
+      instanceData: {
+        ...skillManual.instanceData,
+        name: '养息归元诀',
+        type: 'gongfa_manual',
+      },
+    };
+    expect(RewardItemSchema.safeParse(skillManual).success).toBe(true);
+    expect(AdminRewardItemSchema.safeParse(skillManual).success).toBe(false);
+    expect(
+      AdminRewardSelectionsSchema.safeParse([
+        { type: 'inventory_v1', inventory: skillManual },
+      ]).success,
+    ).toBe(false);
+    expect(AdminRewardItemSchema.safeParse(gongfaManual).success).toBe(true);
+  });
+
   it('preserves production V4 metadata and effects', () => {
     const operations = resolveAlchemyEffects({
       route: { effects: [{ key: 'cultivation', weight: 1 }] },

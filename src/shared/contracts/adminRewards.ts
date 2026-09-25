@@ -6,6 +6,7 @@ import {
   type ItemGrant,
 } from '../inventory';
 import { InventoryEquipmentSchema } from '../inventory/equipment';
+import { MaterialFactsSchema } from '../items/definitions/materials';
 import { findItemDefinition } from '../items/registry';
 import type { MailAttachment } from '../types/mail';
 
@@ -52,6 +53,31 @@ export const RewardItemSchema = ItemGrantSchema.superRefine((grant, ctx) => {
       ctx.addIssue({ code: 'custom', message: '符箓玩法已停用' });
   }
 });
+export function rewardOperationalUnavailableReason(
+  grant: ItemGrant,
+): string | undefined {
+  if (grant.definitionId !== 'material.v1') return undefined;
+  const facts = MaterialFactsSchema.safeParse(grant.instanceData);
+  if (!facts.success || facts.data.type !== 'skill_manual') return undefined;
+  return '神通秘术当前仅保留为历史与交易资产，神通玩法尚未接通，不能配置为运营奖励';
+}
+
+/**
+ * 新建运营奖励使用的严格准入。
+ * RewardItemSchema 继续承担历史快照读取，不能在这里全局禁用旧资产。
+ */
+export const AdminRewardItemSchema = RewardItemSchema.superRefine(
+  (grant, ctx) => {
+    const reason = rewardOperationalUnavailableReason(grant);
+    if (reason)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['instanceData', 'type'],
+        message: reason,
+      });
+  },
+);
+
 export const RewardSelectionsSchema = z
   .array(
     z.discriminatedUnion('type', [
@@ -77,6 +103,34 @@ export const RewardSelectionsSchema = z
   )
   .max(30);
 export type RewardSelection = z.infer<typeof RewardSelectionsSchema>[number];
+
+export const AdminRewardSelectionsSchema = z
+  .array(
+    z.discriminatedUnion('type', [
+      z
+        .object({
+          type: z.literal('spirit_stones'),
+          quantity: z.number().int().positive().max(100000000),
+        })
+        .strict(),
+      z
+        .object({
+          type: z.literal('reputation'),
+          quantity: z.number().int().positive().max(100000000),
+        })
+        .strict(),
+      z
+        .object({
+          type: z.literal('inventory_v1'),
+          inventory: AdminRewardItemSchema,
+        })
+        .strict(),
+    ]),
+  )
+  .max(30);
+export type AdminRewardSelection = z.infer<
+  typeof AdminRewardSelectionsSchema
+>[number];
 
 export function rewardItemName(grant: ItemGrant): string {
   return (

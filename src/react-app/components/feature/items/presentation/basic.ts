@@ -39,6 +39,12 @@ export const blueprintAdapter: ItemAdapter = (item, def) => {
 export const materialAdapter: ItemAdapter = (item) => {
   const facts = materialFactsOf(item.instanceData);
   const type = MATERIAL_TYPE_NAMES[facts.type];
+  const usage =
+    facts.type === 'gongfa_manual'
+      ? '可在悟道室作为功法典籍参悟，按现行规则消耗后有机会获得功法玉简。'
+      : facts.type === 'skill_manual'
+        ? '神通学习玩法尚未接通。当前仅可收藏、转存或按现行交易规则流通；不能用于炼丹、炼器，也不能在悟道室参悟。'
+        : null;
   return {
     summary: {
       icon: {
@@ -59,15 +65,31 @@ export const materialAdapter: ItemAdapter = (item) => {
         field('类型', `${facts.rank} · ${type}`),
         quantity(item, options),
       ],
-      sections: facts.element
-        ? [
-            {
-              title: '道具资料',
-              entries: [{ kind: 'line', label: '五行', value: facts.element }],
-            },
-          ]
-        : [],
-      description: facts.description || '可用于对应炼造玩法的灵材。',
+      sections: [
+        ...(facts.element
+          ? [
+              {
+                title: '道具资料',
+                entries: [
+                  { kind: 'line' as const, label: '五行', value: facts.element },
+                ],
+              },
+            ]
+          : []),
+        ...(usage
+          ? [
+              {
+                title: '当前用途',
+                entries: lines(usage),
+              },
+            ]
+          : []),
+      ],
+      description:
+        facts.description ||
+        (facts.type === 'skill_manual'
+          ? '旧制神通秘术材料，等待后续神通玩法接入。'
+          : '可用于对应炼造玩法的灵材。'),
     }),
   };
 };

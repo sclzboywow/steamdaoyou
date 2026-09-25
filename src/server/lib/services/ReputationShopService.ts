@@ -11,9 +11,11 @@ import {
 import { readCultivatorRealm } from '@server/lib/services/cultivator/CultivatorFactsReader';
 import { resourceEngine } from '@server/lib/services/resource/ResourceEngine';
 import {
+  AdminRewardItemSchema,
   RewardItemSchema,
   materializeRewardItem,
   rewardDisplayItem,
+  rewardOperationalUnavailableReason,
 } from '@shared/contracts/adminRewards';
 import {
   REPUTATION_SHOP_MAX_PRICE,
@@ -69,6 +71,18 @@ async function countPurchases(
     );
 
   return Number(row?.count ?? 0);
+}
+
+function isOperationalShopReward(row: ShopItemRow): boolean {
+  if (!row.itemSnapshot) return false;
+  const parsed = RewardItemSchema.safeParse({
+    ...row.itemSnapshot,
+    quantity: row.quantity,
+  });
+  return (
+    parsed.success &&
+    rewardOperationalUnavailableReason(parsed.data) === undefined
+  );
 }
 
 async function buildView(args: {
@@ -167,6 +181,7 @@ export async function listReputationShopItems(
         (entry) =>
           !args.userVisibleOnly ||
           (entry.row.itemSnapshot !== null &&
+            isOperationalShopReward(entry.row) &&
             cultivatorRealm !== null &&
             isItemExchangeRealmEligible(
               cultivatorRealm,
@@ -216,14 +231,19 @@ function assertStoredShopItem(
   ) {
     throw new ReputationShopError(400, '商品每周限购配置异常');
   }
-  RewardItemSchema.parse({ ...row.itemSnapshot, quantity: row.quantity });
+  const grant = RewardItemSchema.parse({
+    ...row.itemSnapshot,
+    quantity: row.quantity,
+  });
+  const unavailableReason = rewardOperationalUnavailableReason(grant);
+  if (unavailableReason) throw new ReputationShopError(400, unavailableReason);
 }
 
 export async function createReputationShopItem(params: {
   input: ReputationShopItemMutation;
   userId: string;
 }): Promise<ReputationShopItemView> {
-  const { quantity, ...itemSnapshot } = RewardItemSchema.parse(
+  const { quantity, ...itemSnapshot } = AdminRewardItemSchema.parse(
     params.input.item,
   );
   const q = getExecutor();
@@ -253,7 +273,7 @@ export async function updateReputationShopItem(params: {
   input: ReputationShopItemMutation;
   userId: string;
 }): Promise<ReputationShopItemView | null> {
-  const { quantity, ...itemSnapshot } = RewardItemSchema.parse(
+  const { quantity, ...itemSnapshot } = AdminRewardItemSchema.parse(
     params.input.item,
   );
   const q = getExecutor();

@@ -40,6 +40,10 @@ const kinds = {
   talisman: '符箓',
   equipment: '道装',
 };
+const adminRewardMaterialTypes = INVENTORY_MATERIAL_TYPES.filter(
+  (type) => type !== 'skill_manual',
+);
+
 const families = {
   healing: '疗伤',
   mana: '回元',
@@ -296,7 +300,7 @@ export function RewardItemPicker({
                       setPage(1);
                     }}
                   >
-                    {INVENTORY_MATERIAL_TYPES.map((v) => (
+                    {adminRewardMaterialTypes.map((v) => (
                       <option key={v} value={v}>
                         {MATERIAL_TYPE_NAMES[v]}
                       </option>

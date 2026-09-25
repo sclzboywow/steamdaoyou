@@ -1,6 +1,6 @@
 import { REALM_ORDER, REALM_VALUES } from '@shared/types/constants';
 import { z } from 'zod';
-import { RewardItemSchema, rewardDisplayItem } from './adminRewards';
+import { AdminRewardItemSchema, rewardDisplayItem } from './adminRewards';
 
 export const ItemExchangeShopItemStatusSchema = z.enum(['active', 'archived']);
 export const ItemExchangeShopRealmSchema = z.enum(REALM_VALUES);
@@ -10,7 +10,7 @@ export const ITEM_EXCHANGE_SHOP_MAX_STACK_QUANTITY = 30;
 
 export const ItemExchangeShopItemMutationSchema = z
   .object({
-    item: RewardItemSchema,
+    item: AdminRewardItemSchema,
     price: z.number().int().min(1).max(ITEM_EXCHANGE_SHOP_MAX_PRICE),
     perUserLimit: z.number().int().min(1).max(100000000).nullable().optional(),
     minRealm: ItemExchangeShopRealmSchema.default('炼气'),

@@ -5,7 +5,7 @@ import {
   sectShopItems,
 } from '@server/lib/drizzle/schema';
 import {
-  RewardItemSchema,
+  AdminRewardItemSchema,
   rewardDisplayItem,
 } from '@shared/contracts/adminRewards';
 import { CHARACTER_MANUALS_V1 } from '@shared/engine/combat-v6/manuals/content';
@@ -283,7 +283,7 @@ function stableUuid(slotKey: string): string {
 }
 
 function stripQuantity(grant: ItemGrant): Omit<ItemGrant, 'quantity'> {
-  const validated = RewardItemSchema.parse(grant);
+  const validated = AdminRewardItemSchema.parse(grant);
   const { quantity: _quantity, ...snapshot } = validated;
   return snapshot;
 }
@@ -308,7 +308,7 @@ function fixedItem(
   const definition = ITEM_DEFINITIONS.find((item) => item.id === definitionId);
   if (!definition) throw new Error(`固定物品未注册：${definitionId}`);
   const quantity = input.quantity ?? 1;
-  const grant = RewardItemSchema.parse({ definitionId, quantity });
+  const grant = AdminRewardItemSchema.parse({ definitionId, quantity });
   return {
     shop: 'reputation',
     slotKey,
@@ -338,7 +338,7 @@ function libraryItem(
     sortOrder: number;
   },
 ): PlannedShopItem {
-  const grant = RewardItemSchema.parse({
+  const grant = AdminRewardItemSchema.parse({
     ...libraryMaterialGrant(entry),
     quantity: input.quantity,
   });
@@ -635,7 +635,7 @@ function assertPlan(plan: readonly PlannedShopItem[]) {
       REALM_ORDER[item.minRealm] > REALM_ORDER[item.maxRealm]
     )
       throw new Error(`境界范围非法：${item.name}`);
-    RewardItemSchema.parse({ ...item.itemSnapshot, quantity: item.quantity });
+    AdminRewardItemSchema.parse({ ...item.itemSnapshot, quantity: item.quantity });
   }
 }
 

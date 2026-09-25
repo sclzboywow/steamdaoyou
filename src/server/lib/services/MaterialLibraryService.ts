@@ -108,7 +108,7 @@ const DAILY_MARKET_TYPE_WEIGHTS: Array<{
   { materialType: 'tcdb', weight: 5 },
   { materialType: 'aux', weight: 4 },
   { materialType: 'gongfa_manual', weight: 4 },
-  { materialType: 'skill_manual', weight: 4 },
+  // 神通玩法尚未接通：已有/手工生成的 skill_manual 保留，自动补库不再继续扩张。
   { materialType: 'herb', weight: 1 },
   { materialType: 'ore', weight: 1 },
   { materialType: 'monster', weight: 1 },
