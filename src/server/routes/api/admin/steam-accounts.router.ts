@@ -187,7 +187,7 @@ router.post(
   '/:steamId/unlink',
   validateJson(AdminSteamUnlinkRequestSchema),
   async (c) => {
-    const steamId = c.req.param('steamId').trim();
+    const steamId = c.req.param('steamId')?.trim() ?? '';
     if (!/^\d{15,20}$/.test(steamId)) {
       return c.json({ success: false as const, error: 'SteamID64 格式错误' }, 400);
     }
