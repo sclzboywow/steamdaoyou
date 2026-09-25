@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daoyou Game Core Domain"
+  short_description: "Daoyou V6 战斗、人物投影、宗门、道装功法与共享物品规则"
+  default_prompt: "Use $daoyou-game-core-domain to work on Daoyou combat-v6 rules, projections, sect content, equipment, manuals, beasts, or shared inventory logic."

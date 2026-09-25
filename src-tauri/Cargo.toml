@@ -1,0 +1,25 @@
+[package]
+name = "wanjiedaoyou-steam"
+version = "0.2.1"
+description = "万界道友 Steam desktop client"
+authors = ["Daoyou contributors"]
+edition = "2021"
+rust-version = "1.80"
+license = "GPL-3.0"
+
+[lib]
+name = "wanjiedaoyou_steam_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = []
+steamworks-native = ["dep:steamworks"]
+
+[build-dependencies]
+tauri-build = { version = "2.6", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+steamworks = { version = "0.13.1", optional = true }
+tauri = { version = "2.11", features = [] }
