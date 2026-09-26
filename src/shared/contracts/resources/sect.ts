@@ -106,6 +106,8 @@ const sectShopItemSchema = z
     price: z.number().int().positive(),
     quantity: z.number().int().positive(),
     perUserLimit: z.number().int().positive().nullable(),
+    minRealm: z.enum(REALM_VALUES),
+    maxRealm: z.enum(REALM_VALUES).nullable(),
     status: z.enum(['active', 'archived']),
     sortOrder: z.number().int(),
     purchasedCount: z.number().int().nonnegative(),

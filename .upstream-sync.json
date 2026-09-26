@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "project": "steamdaoyou",
+  "localRepository": "sclzboywow/steamdaoyou",
+  "upstreamRepository": "ChurchTao/Daoyou",
+  "upstreamBranch": "master",
+  "localBaselineBeforeSync": "532765eff19b9a553fd48633003aa7fbaa154d0e",
+  "upstreamBaseBeforeSync": "9126535d8748fe1613c677fd6b7b15465b668744",
+  "appliedUpstreamRange": {
+    "fromExclusive": "9126535d8748fe1613c677fd6b7b15465b668744",
+    "toInclusive": "8900fd943a893e6b80e24a10eaef4f707e86234e",
+    "sourcePullRequest": 79,
+    "officialMergeCommit": "25ce3a59be27"
+  },
+  "alreadyPresentUpstreamWork": {
+    "sourcePullRequest": 78,
+    "description": "guide flow state v2 / inventory-independent forging tutorial"
+  },
+  "absorbedThrough": "5094bdf82e1b85b7980c787554a6d74293c8d7bc",
+  "absorbedThroughMeaning": "Future upstream drift checks MUST start after this exact ChurchTao/Daoyou commit. Do not re-apply PR #79 or PR #78 changes.",
+  "syncDate": "2026-09-26",
+  "preservedLocalCustomizations": [
+    "Steam/Tauri runtime and Steam authentication/distribution customizations",
+    "realm-gated reputation/sect exchange shops",
+    "skill_manual legacy-only policy and presentation copy",
+    "Steam guide V2 behavior",
+    "existing Steam spirit-field customizations"
+  ]
+}

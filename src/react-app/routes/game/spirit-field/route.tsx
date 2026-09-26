@@ -315,8 +315,10 @@ export default function SpiritFieldPage() {
       ) : null}
       <InventoryItems
         items={bag?.items ?? []}
+        quickTouchHint
         slotProps={(item) => ({
           disabled: !item || busy || bagUnavailable,
+          quickOnTouch: true,
           selected: !!item && item.id === chosen?.id,
           badge: item && canChoose(item) ? '可选' : undefined,
           onQuickAction:
@@ -452,6 +454,7 @@ export default function SpiritFieldPage() {
                       emptyLabel={!selected.plant ? '选择灵种' : '选择投入物'}
                       disabled={busy}
                       onQuickAction={() => setBagOpen(true)}
+                      quickOnTouch
                     >
                       {(close) => (
                         <InkButton
