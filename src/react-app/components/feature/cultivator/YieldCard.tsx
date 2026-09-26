@@ -238,7 +238,7 @@ export function YieldCard({
           </span>
         </div>
 
-        {yieldResult?.expGain && (
+        {(yieldResult?.expGain ?? 0) > 0 && (
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">修为精进：</span>
             <span className="text-teal text-2xl font-bold">
@@ -247,7 +247,7 @@ export function YieldCard({
           </div>
         )}
 
-        {yieldResult?.insightGain && (
+        {(yieldResult?.insightGain ?? 0) > 0 && (
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">{insightInfo.label}：</span>
             <span className="text-wood text-2xl font-bold">
@@ -271,9 +271,8 @@ export function YieldCard({
           </div>
         )}
 
-        {yieldResult?.rewardCount &&
-          yieldResult.rewardCount > 0 &&
-          (!yieldResult.materials || yieldResult.materials.length === 0) && (
+        {(yieldResult?.rewardCount ?? 0) > 0 &&
+          (!yieldResult?.materials || yieldResult.materials.length === 0) && (
             <div className="border-crimson/30 bg-bgpaper mb-6 border border-dashed p-3 text-center">
               <p className="text-ink-secondary text-sm">
                 另有{' '}
