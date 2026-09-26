@@ -165,7 +165,6 @@ body {
 
 .battle-dock {
   background: rgba(248, 243, 230, 0.96);
-  border-top: 1px dashed var(--color-battle-rule-strong);
 }
 
 /* 移动端适配 */

@@ -47,6 +47,7 @@ export function GameBottomDock({
   isExpanded,
   onToggleExpanded,
   dockMode = 'core',
+  suppressTopRule = false,
 }: {
   sceneId?: string | null;
   unreadMailCount: number;
@@ -54,6 +55,8 @@ export function GameBottomDock({
   isExpanded: boolean;
   onToggleExpanded: () => void;
   dockMode?: 'core' | 'expanded' | 'hidden';
+  /** 上方已有通知预览栏时去掉顶部分隔虚线，避免双线。 */
+  suppressTopRule?: boolean;
 }) {
   const drawerOpen = dockMode === 'expanded' || isExpanded;
   const coreDockItems = getCoreDockItems();
@@ -64,7 +67,13 @@ export function GameBottomDock({
   }
 
   return (
-    <footer className="battle-dock border-battle-rule-strong w-full border-t border-dashed">
+    <footer
+      className={cn(
+        'battle-dock w-full',
+        !suppressTopRule &&
+          'border-battle-rule-strong border-t border-dashed',
+      )}
+    >
       <div className="mx-auto max-w-5xl pt-2 pr-[max(env(safe-area-inset-right),0.75rem)] pb-[calc(env(safe-area-inset-bottom)+0.8rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
         <nav
           aria-label="核心场景"

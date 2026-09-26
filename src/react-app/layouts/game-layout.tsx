@@ -1,6 +1,9 @@
 import { GuideOverlay } from '@app/components/feature/guide/GuideOverlay';
 import { WorldChatPreviewBar } from '@app/components/feature/world-chat/WorldChatPreviewBar';
-import { WorldChatFeedProvider } from '@app/components/feature/world-chat/useWorldChatFeedModel';
+import {
+  WorldChatFeedProvider,
+  useWorldChatFeedModel,
+} from '@app/components/feature/world-chat/useWorldChatFeedModel';
 import { GameBottomDock } from '@app/components/game-shell/GameBottomDock';
 import { GameLoadingState } from '@app/components/game-shell/GameLoadingState';
 import { GameTopHud } from '@app/components/game-shell/GameTopHud';
@@ -233,6 +236,38 @@ function SectVisitSceneChrome() {
   );
 }
 
+function BottomChromeDock({
+  sceneId,
+  unreadMailCount,
+  hasUnallocatedAttributePoints,
+  isExpanded,
+  onToggleExpanded,
+  dockMode,
+}: {
+  sceneId: string | null;
+  unreadMailCount: number;
+  hasUnallocatedAttributePoints: boolean;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
+  dockMode: 'core' | 'expanded' | 'hidden';
+}) {
+  const { isWorldChatRoute } = useWorldChatFeedModel();
+  return (
+    <>
+      <WorldChatPreviewBar />
+      <GameBottomDock
+        sceneId={sceneId}
+        unreadMailCount={unreadMailCount}
+        hasUnallocatedAttributePoints={hasUnallocatedAttributePoints}
+        isExpanded={isExpanded}
+        onToggleExpanded={onToggleExpanded}
+        dockMode={dockMode}
+        suppressTopRule={!isWorldChatRoute}
+      />
+    </>
+  );
+}
+
 export function GameViewportLayout() {
   const location = useLocation();
   const matches = useMatches();
@@ -299,8 +334,7 @@ export function GameViewportLayout() {
         <RealtimeConnectionToasts />
         <GuideOverlay />
         <div ref={bottomChromeRef} className="fixed inset-x-0 bottom-0 z-40">
-          <WorldChatPreviewBar />
-          <GameBottomDock
+          <BottomChromeDock
             sceneId={scene?.id ?? null}
             unreadMailCount={hud?.unreadMailCount ?? 0}
             hasUnallocatedAttributePoints={
