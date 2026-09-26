@@ -91,7 +91,6 @@ export function ItemExchangeShopAdminPage({
   const [editorError, setEditorError] = useState('');
   const [editorOpen, setEditorOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -188,7 +187,7 @@ export function ItemExchangeShopAdminPage({
   };
   const visibleItems = items.filter(
     (item) =>
-      (filter === 'all' || item.status === filter) &&
+      item.status === 'active' &&
       (item.item?.name ?? item.itemLibraryItemId ?? '').includes(query),
   );
 
@@ -212,11 +211,6 @@ export function ItemExchangeShopAdminPage({
       />
       <div className="flex flex-wrap items-end gap-4">
         <InkInput label="搜索商品" value={query} onChange={setQuery} />
-        <InkSelect label="商品状态" value={filter} onChange={setFilter}>
-          <option value="all">全部</option>
-          <option value="active">上架中</option>
-          <option value="archived">已下架</option>
-        </InkSelect>
         <span className="text-ink-secondary pb-2 text-sm">
           共 <span className="font-mono">{visibleItems.length}</span> 件商品
         </span>
@@ -224,9 +218,7 @@ export function ItemExchangeShopAdminPage({
       {loading ? (
         <InkNotice>商品加载中…</InkNotice>
       ) : !visibleItems.length ? (
-        <InkNotice>
-          {query || filter !== 'all' ? '没有匹配的商品' : emptyText}
-        </InkNotice>
+        <InkNotice>{query ? '没有匹配的商品' : emptyText}</InkNotice>
       ) : (
         <div className="grid gap-x-8 md:grid-cols-2">
           {visibleItems.map((item) => (
