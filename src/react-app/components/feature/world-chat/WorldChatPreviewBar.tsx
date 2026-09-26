@@ -17,7 +17,7 @@ export function WorldChatPreviewBar() {
   const channelLabel = latestMessage?.channel === 'system' ? '系统' : '世界';
 
   return (
-    <div className="battle-dock border-battle-rule-strong border-t border-dashed">
+    <div className="bg-[rgba(248,243,230,0.96)]">
       <div className="mx-auto max-w-5xl py-1.5 pr-[max(env(safe-area-inset-right),0.75rem)] pl-[max(env(safe-area-inset-left),0.75rem)] md:pr-[max(env(safe-area-inset-right),1.5rem)] md:pl-[max(env(safe-area-inset-left),1.5rem)]">
         <Link
           href="/game/world-chat"
