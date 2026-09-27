@@ -1,12 +1,14 @@
 name: ${COMPOSE_PROJECT_NAME:-daoyou}
 
 x-app-common: &app-common
-  image: ${APP_IMAGE:-swkzymlyy/daoyou-app:latest}
+  image: ${APP_IMAGE:?APP_IMAGE must be an immutable tag such as registry/daoyou-app:<git-sha>}
   restart: unless-stopped
   env_file:
     - ${ENV_FILE:-/root/daoyou/.env.production}
   environment:
     PORT: 3000
+    APP_ENV: production
+    NODE_ENV: production
   extra_hosts:
     - "host.docker.internal:host-gateway"
   networks:
@@ -17,12 +19,18 @@ x-app-common: &app-common
         "CMD",
         "bun",
         "-e",
-        "fetch('http://127.0.0.1:3000/api/health-check').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
+        "fetch('http://127.0.0.1:3000/api/ready-check').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
       ]
     interval: 10s
     timeout: 5s
     retries: 12
     start_period: 10s
+  stop_grace_period: 90s
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
 
 services:
   app-blue:
@@ -42,3 +50,4 @@ services:
 networks:
   runtime:
     name: ${APP_NETWORK:-daoyou-runtime}
+    external: true

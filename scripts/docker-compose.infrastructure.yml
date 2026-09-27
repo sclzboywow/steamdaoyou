@@ -1,0 +1,119 @@
+name: ${INFRA_PROJECT_NAME:-daoyou-infra}
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    container_name: ${POSTGRES_CONTAINER:-daoyou-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - runtime
+    shm_size: 256mb
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" -h 127.0.0.1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    container_name: ${REDIS_CONTAINER:-daoyou-redis}
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        exec redis-server \
+          --appendonly yes \
+          --appendfsync everysec \
+          --save 900 1 \
+          --save 300 10 \
+          --requirepass "$${REDIS_PASSWORD}"
+    volumes:
+      - redis-data:/data
+    networks:
+      - runtime
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping | grep -q PONG",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  nats:
+    image: ${NATS_IMAGE:-nats:2.11-alpine}
+    container_name: ${NATS_CONTAINER:-daoyou-nats}
+    restart: unless-stopped
+    environment:
+      NATS_USER: ${NATS_USER:?NATS_USER is required}
+      NATS_PASSWORD: ${NATS_PASSWORD:?NATS_PASSWORD is required}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        exec nats-server \
+          --config=/etc/nats/nats-server.conf \
+          --jetstream \
+          --store_dir=/data/jetstream \
+          --http_port=8222 \
+          --user="$${NATS_USER}" \
+          --pass="$${NATS_PASSWORD}"
+    volumes:
+      - nats-data:/data/jetstream
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+    networks:
+      - runtime
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8222/healthz | grep -q ok",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  postgres-data:
+    name: ${POSTGRES_VOLUME:-daoyou-postgres-data}
+  redis-data:
+    name: ${REDIS_VOLUME:-daoyou-redis-data}
+  nats-data:
+    name: ${NATS_VOLUME:-daoyou-nats-data}
+
+networks:
+  runtime:
+    name: ${APP_NETWORK:-daoyou-runtime}
+    external: true

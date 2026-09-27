@@ -54,6 +54,15 @@ export const db = drizzle(pool, {
   },
 });
 
+export async function getPostgresHealthStatus(): Promise<'up' | 'down'> {
+  try {
+    await pool.query('select 1');
+    return 'up';
+  } catch {
+    return 'down';
+  }
+}
+
 export type DbClient = typeof db;
 
 export type DbTransaction = Parameters<

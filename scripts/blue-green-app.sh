@@ -5,20 +5,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-${SCRIPT_DIR}/docker-compose.production.yml}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-daoyou}"
 ENV_FILE="${ENV_FILE:-/root/daoyou/.env.production}"
-APP_IMAGE="${APP_IMAGE:-swkzymlyy/daoyou-app:latest}"
+APP_IMAGE="${APP_IMAGE:-}"
 APP_NETWORK="${APP_NETWORK:-daoyou-runtime}"
 
 BLUE_PORT="${BLUE_PORT:-3000}"
 GREEN_PORT="${GREEN_PORT:-3001}"
 BLUE_CONTAINER="${BLUE_CONTAINER:-daoyou-app-blue}"
 GREEN_CONTAINER="${GREEN_CONTAINER:-daoyou-app-green}"
-OPENRESTY_CONTAINER="${OPENRESTY_CONTAINER:-1Panel-openresty-PkPz}"
-UPSTREAM_CONF="${UPSTREAM_CONF:-/opt/1panel/www/sites/hk.daoyou.org/upstream/daoyou_backend.conf}"
-HEALTH_PATH="${HEALTH_PATH:-/api/health-check}"
+API_DOMAIN="${API_DOMAIN:-}"
+OPENRESTY_CONTAINER="${OPENRESTY_CONTAINER:-}"
+UPSTREAM_CONF="${UPSTREAM_CONF:-}"
+HEALTH_PATH="${HEALTH_PATH:-/api/ready-check}"
+PUBLIC_READY_URL="${PUBLIC_READY_URL:-}"
 MAX_RETRIES="${MAX_RETRIES:-40}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-3}"
-OLD_CONTAINER_GRACE_SECONDS="${OLD_CONTAINER_GRACE_SECONDS:-30}"
+OLD_CONTAINER_GRACE_SECONDS="${OLD_CONTAINER_GRACE_SECONDS:-90}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-/tmp/daoyou-app-blue-green.lock}"
+DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-/root/daoyou/deploy-state.env}"
 
 export COMPOSE_FILE COMPOSE_PROJECT_NAME ENV_FILE APP_IMAGE APP_NETWORK
 export BLUE_PORT GREEN_PORT BLUE_CONTAINER GREEN_CONTAINER
@@ -29,7 +32,7 @@ if ! flock -n 9; then
   exit 1
 fi
 
-for command in docker curl flock sed cmp; do
+for command in docker curl flock sed cmp grep date mkdir mv mktemp dirname; do
   if ! command -v "${command}" >/dev/null 2>&1; then
     echo "Required command not found: ${command}" >&2
     exit 1
@@ -45,12 +48,42 @@ else
   exit 1
 fi
 
+if [ -z "${APP_IMAGE}" ]; then
+  echo "APP_IMAGE is required; deploy an immutable tag such as registry/daoyou-app:<git-sha>" >&2
+  exit 1
+fi
+if [[ "${APP_IMAGE}" == *":latest" ]] && [ "${ALLOW_LATEST_IMAGE:-0}" != "1" ]; then
+  echo "Refusing mutable :latest image. Set APP_IMAGE to a git SHA/release tag." >&2
+  exit 1
+fi
+
+if [ -z "${UPSTREAM_CONF}" ]; then
+  if [ -z "${API_DOMAIN}" ]; then
+    echo "Set UPSTREAM_CONF or API_DOMAIN" >&2
+    exit 1
+  fi
+  UPSTREAM_CONF="/opt/1panel/www/sites/${API_DOMAIN}/upstream/daoyou_backend.conf"
+fi
+
+if [ -z "${OPENRESTY_CONTAINER}" ]; then
+  OPENRESTY_CONTAINER="$(docker ps --format '{{.Names}}' | grep -E '^1Panel-openresty-' | head -n 1 || true)"
+fi
+if [ -z "${OPENRESTY_CONTAINER}" ]; then
+  echo "OPENRESTY_CONTAINER is not set and no 1Panel OpenResty container was detected" >&2
+  exit 1
+fi
+
 if [ ! -f "${ENV_FILE}" ]; then
   echo "ENV_FILE not found: ${ENV_FILE}" >&2
   exit 1
 fi
 if [ ! -f "${UPSTREAM_CONF}" ]; then
   echo "OpenResty upstream config not found: ${UPSTREAM_CONF}" >&2
+  exit 1
+fi
+
+if ! docker network inspect "${APP_NETWORK}" >/dev/null 2>&1; then
+  echo "Docker network not found: ${APP_NETWORK}. Run scripts/bootstrap-production.sh first." >&2
   exit 1
 fi
 
@@ -111,8 +144,10 @@ target_container="$(service_container "${target_service}")"
 target_port="$(service_port "${target_service}")"
 target_profile="${target_service#app-}"
 active_container=""
+active_image=""
 if [ -n "${active_service}" ]; then
   active_container="$(service_container "${active_service}")"
+  active_image="$(docker inspect --format '{{.Config.Image}}' "${active_container}" 2>/dev/null || true)"
 fi
 
 echo "Active service: ${active_service:-none}"
@@ -147,49 +182,85 @@ sed -E \
   "s/server[[:space:]]+127\.0\.0\.1:[0-9]+;/server 127.0.0.1:${target_port};/" \
   "${UPSTREAM_CONF}" >"${temporary}"
 
+write_deploy_state() {
+  local previous_image="$1"
+  local previous_service="$2"
+  local state_dir
+  local state_tmp
+  state_dir="$(dirname "${DEPLOY_STATE_FILE}")"
+  state_tmp="$(mktemp)"
+  "${PRIVILEGED[@]}" mkdir -p "${state_dir}"
+  {
+    printf 'CURRENT_IMAGE=%s\n' "${APP_IMAGE}"
+    printf 'PREVIOUS_IMAGE=%s\n' "${previous_image}"
+    printf 'CURRENT_SERVICE=%s\n' "${target_service}"
+    printf 'PREVIOUS_SERVICE=%s\n' "${previous_service}"
+    printf 'DEPLOYED_AT=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } >"${state_tmp}"
+  "${PRIVILEGED[@]}" mv "${state_tmp}" "${DEPLOY_STATE_FILE}"
+}
+
+restore_previous_upstream() {
+  if [ "${upstream_changed}" -ne 1 ]; then
+    return
+  fi
+  "${PRIVILEGED[@]}" cp "${backup}" "${UPSTREAM_CONF}"
+  "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t
+  "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload
+}
+
+upstream_changed=0
 if cmp -s "${UPSTREAM_CONF}" "${temporary}"; then
   if [ "${current_port}" != "${target_port}" ]; then
     echo "No matching upstream server line found in ${UPSTREAM_CONF}" >&2
     stop_and_remove_service "${target_service}"
     exit 1
   fi
-
   echo "Upstream already points to ${target_service} on port ${target_port}"
-
-  if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t; then
-    echo "OpenResty configuration validation failed" >&2
-    exit 1
-  fi
-
-  if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload; then
-    echo "OpenResty reload failed" >&2
-    exit 1
-  fi
-
-  echo "Traffic already points to ${target_service} on port ${target_port}"
-  echo "App blue-green deployment completed"
-  exit 0
+else
+  "${PRIVILEGED[@]}" cp "${UPSTREAM_CONF}" "${backup}"
+  "${PRIVILEGED[@]}" cp "${temporary}" "${UPSTREAM_CONF}"
+  upstream_changed=1
 fi
 
-"${PRIVILEGED[@]}" cp "${UPSTREAM_CONF}" "${backup}"
-"${PRIVILEGED[@]}" cp "${temporary}" "${UPSTREAM_CONF}"
-
 if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -t; then
-  "${PRIVILEGED[@]}" cp "${backup}" "${UPSTREAM_CONF}"
+  restore_previous_upstream || true
   stop_and_remove_service "${target_service}"
   echo "OpenResty configuration validation failed; upstream restored" >&2
   exit 1
 fi
 
 if ! "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload; then
-  "${PRIVILEGED[@]}" cp "${backup}" "${UPSTREAM_CONF}"
-  "${PRIVILEGED[@]}" docker exec "${OPENRESTY_CONTAINER}" nginx -s reload || true
+  restore_previous_upstream || true
   stop_and_remove_service "${target_service}"
   echo "OpenResty reload failed; upstream restored" >&2
   exit 1
 fi
 
 echo "Traffic switched to ${target_service} on port ${target_port}"
+
+if [ -n "${PUBLIC_READY_URL}" ]; then
+  public_ready=0
+  for ((attempt = 1; attempt <= 6; attempt += 1)); do
+    if curl --fail --silent --show-error "${PUBLIC_READY_URL}" >/dev/null; then
+      public_ready=1
+      break
+    fi
+    sleep 2
+  done
+  if [ "${public_ready}" -ne 1 ]; then
+    if [ -n "${active_service}" ]; then
+      restore_previous_upstream || true
+      stop_and_remove_service "${target_service}"
+      echo "Public HTTPS readiness failed; traffic rolled back to ${active_service}" >&2
+    else
+      echo "Public HTTPS readiness failed on first deployment; target left running for diagnosis" >&2
+    fi
+    exit 1
+  fi
+fi
+
+write_deploy_state "${active_image}" "${active_service}"
 
 if [ -n "${active_container}" ]; then
   echo "Draining old service for ${OLD_CONTAINER_GRACE_SECONDS}s: ${active_container}"

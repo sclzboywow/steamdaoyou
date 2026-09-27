@@ -7,7 +7,6 @@ on:
 
 env:
   APP_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/daoyou-app
-  IMAGE_TAG: latest
 
 jobs:
   build-and-push:
@@ -33,4 +32,7 @@ jobs:
           context: .
           file: docker/Dockerfile.app
           push: true
-          tags: ${{ env.APP_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.APP_IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.APP_IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.APP_IMAGE_NAME }}:latest

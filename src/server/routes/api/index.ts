@@ -1,4 +1,5 @@
 import divinationRouter from './divination.router';
+import { getPostgresHealthStatus } from '@server/lib/drizzle/db';
 import type { AppEnv } from '@server/lib/hono/types';
 import { getMessageInfrastructureHealthStatus } from '@server/lib/mq/domainEventRegistry';
 import { getNatsHealthStatus } from '@server/lib/nats';
@@ -81,6 +82,49 @@ apiRouter.get('/health-check', async (c) => {
   return c.json({
     success: true,
     message: 'OK',
+    redis,
+    nats,
+    messaging,
+  });
+});
+
+apiRouter.get('/ready-check', async (c) => {
+  const [postgres, redis, nats] = await Promise.all([
+    getPostgresHealthStatus(),
+    getRedisHealthStatus(),
+    getNatsHealthStatus(),
+  ]);
+  const messaging = getMessageInfrastructureHealthStatus();
+  if (
+    postgres === 'down' ||
+    redis === 'down' ||
+    nats === 'down' ||
+    messaging === 'down'
+  ) {
+    return c.json(
+      {
+        success: false,
+        error:
+          postgres === 'down'
+            ? 'PostgreSQL unavailable'
+            : redis === 'down'
+              ? 'Redis unavailable'
+              : nats === 'down'
+                ? 'NATS unavailable'
+                : 'Message infrastructure unavailable',
+        postgres,
+        redis,
+        nats,
+        messaging,
+      },
+      503,
+    );
+  }
+
+  return c.json({
+    success: true,
+    message: 'READY',
+    postgres,
     redis,
     nats,
     messaging,
