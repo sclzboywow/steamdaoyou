@@ -11,6 +11,7 @@ import {
 import { InkButton } from '@app/components/ui/InkButton';
 import { InkInput } from '@app/components/ui/InkInput';
 import { useAuth, type AuthActionError } from '@app/lib/auth/authContext';
+import { getDefaultAuthenticatedPath } from '@app/lib/runtime';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
@@ -64,7 +65,7 @@ export default function LoginPasswordRoute() {
         throw error;
       }
 
-      navigate('/game', { replace: true });
+      navigate(getDefaultAuthenticatedPath(), { replace: true });
     } catch (error) {
       showErrorDialog(
         toErrorMessage(error as AuthActionError, '登录失败，请稍后重试'),

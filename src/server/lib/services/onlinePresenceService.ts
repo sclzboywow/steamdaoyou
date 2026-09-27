@@ -3,6 +3,7 @@ import { redis } from '@server/lib/redis';
 import { db } from '@server/lib/drizzle/db';
 import { cultivators } from '@server/lib/drizzle/schema';
 import { getPubSubInstanceId } from '@server/lib/services/pubSubEnvelope';
+import { getShanghaiDateKey } from '@server/lib/time/shanghai';
 import type { AdminOnlineUsersSnapshot } from '@shared/contracts/adminOnlineUsers';
 import { eq } from 'drizzle-orm';
 
@@ -62,16 +63,9 @@ return currentOnline
 const localConnectionCounts = new Map<string, number>();
 const memoryOnlineCultivators = new Set<string>();
 const lastActivePersistedAt = new Map<string, number>();
-let memoryToday = formatLocalDate(new Date());
+let memoryToday = getShanghaiDateKey(new Date());
 let memoryTodayPeakOnline = 0;
 let memoryAllTimePeakOnline = 0;
-
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 function getTodayPeakKey(today: string): string {
   return `${DAY_PEAK_KEY_PREFIX}${today}`;
@@ -144,7 +138,7 @@ function readMemorySnapshot(today: string): AdminOnlineUsersSnapshot {
 }
 
 async function syncOnlineChangeToRedis(cultivatorId: string, online: boolean) {
-  const today = formatLocalDate(new Date());
+  const today = getShanghaiDateKey(new Date());
   await redis.eval(
     UPDATE_ONLINE_PRESENCE_SCRIPT,
     4,
@@ -186,7 +180,7 @@ function setMemoryOnline(cultivatorId: string, online: boolean) {
   } else {
     memoryOnlineCultivators.delete(cultivatorId);
   }
-  updateMemoryPeaks(memoryOnlineCultivators.size, formatLocalDate(new Date()));
+  updateMemoryPeaks(memoryOnlineCultivators.size, getShanghaiDateKey(new Date()));
 }
 
 export function recordRealtimeConnectionOpen(cultivatorId: string): void {
@@ -270,7 +264,7 @@ export async function __recordRealtimeConnectionCloseForTests(
 }
 
 export async function getOnlineUsersSnapshot(): Promise<AdminOnlineUsersSnapshot> {
-  const today = formatLocalDate(new Date());
+  const today = getShanghaiDateKey(new Date());
   try {
     return await readRedisSnapshot(today);
   } catch (error) {
@@ -310,7 +304,7 @@ export function __resetOnlinePresenceForTests(): void {
   localConnectionCounts.clear();
   memoryOnlineCultivators.clear();
   lastActivePersistedAt.clear();
-  memoryToday = formatLocalDate(new Date());
+  memoryToday = getShanghaiDateKey(new Date());
   memoryTodayPeakOnline = 0;
   memoryAllTimePeakOnline = 0;
 }

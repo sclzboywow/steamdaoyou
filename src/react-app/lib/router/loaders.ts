@@ -1,5 +1,9 @@
 import { authClient } from '@app/lib/auth/client';
-import { allowSteamLocalAdmin, isSteamRuntime } from '@app/lib/runtime';
+import {
+  allowSteamLocalAdmin,
+  getDefaultAuthenticatedPath,
+  isSteamRuntime,
+} from '@app/lib/runtime';
 import type { AdminRole } from '@shared/contracts/adminAccess';
 import { replace, type LoaderFunctionArgs } from 'react-router';
 import type {
@@ -56,11 +60,15 @@ async function resolveSessionData(
 export async function indexRedirectLoader({ request }: LoaderFunctionArgs) {
   const session = await resolveSessionData(request);
 
-  return session?.user ? replace('/game') : replace('/login');
+  return session?.user
+    ? replace(getDefaultAuthenticatedPath(request.url))
+    : replace('/login');
 }
 
 export async function guestOnlyLoader({ request }: LoaderFunctionArgs) {
-  return (await hasAuthenticatedUser(request)) ? replace('/game') : null;
+  return (await hasAuthenticatedUser(request))
+    ? replace(getDefaultAuthenticatedPath(request.url))
+    : null;
 }
 
 export async function authLayoutLoader({
@@ -71,7 +79,7 @@ export async function authLayoutLoader({
     !PASSWORD_RECOVERY_PATHS.has(pathname) &&
     (await hasAuthenticatedUser(request))
   ) {
-    return replace('/game');
+    return replace(getDefaultAuthenticatedPath(request.url));
   }
 
   try {

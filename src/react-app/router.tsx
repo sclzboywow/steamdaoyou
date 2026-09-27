@@ -1239,8 +1239,9 @@ const routes = createRoutesFromElements(
         lazy={lazyRoute(() => import('@app/routes/admin/layout'))}
         handle={title('万界司天台')}
       >
+        <Route index loader={() => replace('/admin/overview')} />
         <Route
-          index
+          path="overview"
           lazy={lazyRoute(() => import('@app/routes/admin/route'))}
           handle={title('总览')}
         />

@@ -1,3 +1,4 @@
+import { getDefaultAuthenticatedPath } from '@app/lib/runtime';
 import { BetterFetchError } from '@better-fetch/fetch';
 import { createContext } from 'react';
 import { authClient } from './client';
@@ -74,7 +75,10 @@ export function getDefaultGameRedirectUrl() {
     return '/game';
   }
 
-  return new URL('/game', window.location.origin).toString();
+  return new URL(
+    getDefaultAuthenticatedPath(window.location.href),
+    window.location.origin,
+  ).toString();
 }
 
 export function getCaptchaFetchOptions(captchaPayload?: string) {

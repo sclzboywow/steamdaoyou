@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGitHub: AuthContextType['signInWithGitHub'] = async (
-    callbackURL = '/game',
+    callbackURL = getDefaultGameRedirectUrl(),
   ) => {
     const { error } = await authClient.signIn.social({
       provider: 'github',

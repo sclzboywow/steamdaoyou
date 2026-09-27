@@ -6,7 +6,11 @@ import {
 } from '@app/components/auth';
 import { InkButton } from '@app/components/ui/InkButton';
 import { useAuth, type AuthActionError } from '@app/lib/auth/authContext';
-import { isSteamRuntime, runtimeCapabilities } from '@app/lib/runtime';
+import {
+  getDefaultAuthenticatedPath,
+  isSteamRuntime,
+  runtimeCapabilities,
+} from '@app/lib/runtime';
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 
@@ -40,7 +44,7 @@ function LoginChoicePage() {
     setLoading(true);
 
     try {
-      const { error } = await signInWithGitHub('/game');
+      const { error } = await signInWithGitHub(getDefaultAuthenticatedPath());
 
       if (error) {
         throw error;

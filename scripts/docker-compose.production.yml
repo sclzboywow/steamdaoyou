@@ -9,6 +9,7 @@ x-app-common: &app-common
     PORT: 3000
     APP_ENV: production
     NODE_ENV: production
+    APP_RELEASE: ${APP_RELEASE:-unknown}
   extra_hosts:
     - "host.docker.internal:host-gateway"
   networks:

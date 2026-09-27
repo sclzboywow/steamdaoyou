@@ -23,7 +23,7 @@ OLD_CONTAINER_GRACE_SECONDS="${OLD_CONTAINER_GRACE_SECONDS:-90}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-/tmp/daoyou-app-blue-green.lock}"
 DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-/root/daoyou/deploy-state.env}"
 
-export COMPOSE_FILE COMPOSE_PROJECT_NAME ENV_FILE APP_IMAGE APP_NETWORK
+export COMPOSE_FILE COMPOSE_PROJECT_NAME ENV_FILE APP_IMAGE APP_NETWORK APP_RELEASE
 export BLUE_PORT GREEN_PORT BLUE_CONTAINER GREEN_CONTAINER
 
 exec 9>"${DEPLOY_LOCK_FILE}"
@@ -56,6 +56,8 @@ if [[ "${APP_IMAGE}" == *":latest" ]] && [ "${ALLOW_LATEST_IMAGE:-0}" != "1" ]; 
   echo "Refusing mutable :latest image. Set APP_IMAGE to a git SHA/release tag." >&2
   exit 1
 fi
+APP_RELEASE="${APP_RELEASE:-${APP_IMAGE##*:}}"
+export APP_RELEASE
 
 if [ -z "${UPSTREAM_CONF}" ]; then
   if [ -z "${API_DOMAIN}" ]; then

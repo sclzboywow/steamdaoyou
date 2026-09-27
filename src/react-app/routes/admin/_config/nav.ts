@@ -11,8 +11,8 @@ export interface AdminNavItem {
 export const adminNavItems: AdminNavItem[] = [
   {
     title: '总览',
-    description: '后台入口与能力地图',
-    href: '/admin',
+    description: '运行状态、活跃与待办摘要',
+    href: '/admin/overview',
     capability: 'overview',
   },
   {
