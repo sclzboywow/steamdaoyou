@@ -242,7 +242,7 @@ export function YieldCard({
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">修为精进：</span>
             <span className="text-teal text-2xl font-bold">
-              {cultivationInfo.icon} {yieldResult.expGain}
+              {cultivationInfo.icon} {yieldResult?.expGain}
             </span>
           </div>
         )}
@@ -251,7 +251,7 @@ export function YieldCard({
           <div className="mb-4 flex items-center justify-center gap-2">
             <span className="text-ink-secondary">{insightInfo.label}：</span>
             <span className="text-wood text-2xl font-bold">
-              {insightInfo.icon} {yieldResult.insightGain}
+              {insightInfo.icon} {yieldResult?.insightGain}
             </span>
           </div>
         )}
@@ -277,7 +277,7 @@ export function YieldCard({
               <p className="text-ink-secondary text-sm">
                 另有{' '}
                 <span className="text-crimson font-bold">
-                  {yieldResult.rewardCount}
+                  {yieldResult?.rewardCount}
                 </span>{' '}
                 件历练所得正在运送中，稍后将通过传音玉简（邮件）送达。
               </p>
