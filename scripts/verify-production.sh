@@ -15,6 +15,7 @@ API_DOMAIN="$(production_env_default "${API_DOMAIN:-}" "${ENV_FILE}" API_DOMAIN)
 UPSTREAM_CONF="$(production_env_default "${UPSTREAM_CONF:-}" "${ENV_FILE}" UPSTREAM_CONF)"
 BLUE_PORT="$(production_env_default "${BLUE_PORT:-}" "${ENV_FILE}" BLUE_PORT 3000)"
 GREEN_PORT="$(production_env_default "${GREEN_PORT:-}" "${ENV_FILE}" GREEN_PORT 3001)"
+OPS_RUNTIME_DIR="$(production_env_default "${OPS_RUNTIME_DIR:-}" "${ENV_FILE}" OPS_RUNTIME_DIR /root/daoyou/runtime)"
 
 if [ -z "${UPSTREAM_CONF}" ] && [ -n "${API_DOMAIN}" ]; then
   UPSTREAM_CONF="/opt/1panel/www/sites/${API_DOMAIN}/upstream/daoyou_backend.conf"
@@ -30,6 +31,14 @@ docker compose \
 echo "==> Docker network"
 docker network inspect "${APP_NETWORK}" >/dev/null
 echo "OK: ${APP_NETWORK}"
+
+echo "==> Host ops snapshot"
+if [ ! -s "${OPS_RUNTIME_DIR}/ops-status.json" ]; then
+  echo "Ops status missing: ${OPS_RUNTIME_DIR}/ops-status.json" >&2
+  exit 1
+fi
+grep -q '"generatedAt"' "${OPS_RUNTIME_DIR}/ops-status.json"
+echo "OK: ${OPS_RUNTIME_DIR}/ops-status.json"
 
 echo "==> Active upstream"
 if [ -n "${UPSTREAM_CONF}" ] && [ -f "${UPSTREAM_CONF}" ]; then

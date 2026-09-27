@@ -25,6 +25,7 @@ export API_DOMAIN="$(production_env_default "${API_DOMAIN:-}" "${ENV_FILE}" API_
 export UPSTREAM_CONF="$(production_env_default "${UPSTREAM_CONF:-}" "${ENV_FILE}" UPSTREAM_CONF)"
 export OPENRESTY_CONTAINER="$(production_env_default "${OPENRESTY_CONTAINER:-}" "${ENV_FILE}" OPENRESTY_CONTAINER)"
 export DEPLOY_STATE_FILE="$(production_env_default "${DEPLOY_STATE_FILE:-}" "${ENV_FILE}" DEPLOY_STATE_FILE /root/daoyou/deploy-state.env)"
+export OPS_RUNTIME_DIR="$(production_env_default "${OPS_RUNTIME_DIR:-}" "${ENV_FILE}" OPS_RUNTIME_DIR /root/daoyou/runtime)"
 export BLUE_PORT="$(production_env_default "${BLUE_PORT:-}" "${ENV_FILE}" BLUE_PORT 3000)"
 export GREEN_PORT="$(production_env_default "${GREEN_PORT:-}" "${ENV_FILE}" GREEN_PORT 3001)"
 export OLD_CONTAINER_GRACE_SECONDS="$(production_env_default "${OLD_CONTAINER_GRACE_SECONDS:-}" "${ENV_FILE}" OLD_CONTAINER_GRACE_SECONDS 90)"
@@ -47,6 +48,15 @@ fi
 
 echo "==> Blue/green release: ${APP_IMAGE}"
 ENV_FILE="${ENV_FILE}" APP_IMAGE="${APP_IMAGE}" "${SCRIPT_DIR}/blue-green-app.sh"
+
+if [ "$(production_env_default "${CLEANUP_OLD_APP_IMAGES:-}" "${ENV_FILE}" CLEANUP_OLD_APP_IMAGES 1)" = "1" ]; then
+  echo "==> Cleaning old application images"
+  ENV_FILE="${ENV_FILE}" "${SCRIPT_DIR}/cleanup-app-images.sh" ||     echo "Warning: old image cleanup failed; release remains successful." >&2
+fi
+
+if [ -x "${SCRIPT_DIR}/collect-ops-status.sh" ]; then
+  ENV_FILE="${ENV_FILE}" "${SCRIPT_DIR}/collect-ops-status.sh" >/dev/null ||     echo "Warning: ops snapshot refresh failed." >&2
+fi
 
 echo
 echo "Release completed: ${APP_IMAGE}"

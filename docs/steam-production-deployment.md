@@ -54,8 +54,15 @@ sudo ENV_FILE=/root/daoyou/.env.production ./scripts/bootstrap-production.sh
 - 创建蓝绿 upstream 文件（初始指向 blue:3000）
 - 创建备份目录
 - 安装每天 03:30（Asia/Shanghai）的 PostgreSQL systemd 备份任务
+- 安装每 5 分钟宿主机运维快照采集
+- 按配置限制 systemd journal 大小
+- 若配置了真实 `OPENRESTY_LOG_DIR`，安装 OpenResty 文件日志轮转
 
 PostgreSQL/Redis/NATS 不向公网暴露端口。
+
+运维监控、日志轮转和旧镜像安全清理详见：
+
+`docs/production-ops-monitoring.md`
 
 ## 3. 1Panel 域名与 HTTPS
 

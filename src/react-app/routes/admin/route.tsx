@@ -29,6 +29,43 @@ function statusTone(status: 'up' | 'down' | 'disabled') {
   return status === 'up' ? 'text-emerald-700' : 'text-crimson';
 }
 
+function opsTone(severity: 'ok' | 'warning' | 'critical' | 'unknown') {
+  if (severity === 'critical') return 'text-crimson';
+  if (severity === 'warning') return 'text-amber-700';
+  if (severity === 'ok') return 'text-emerald-700';
+  return 'text-ink-secondary';
+}
+
+function formatBytes(value: number | null): string {
+  if (value === null) return '未知';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let next = value;
+  let unit = 0;
+  while (next >= 1024 && unit < units.length - 1) {
+    next /= 1024;
+    unit += 1;
+  }
+  const digits = unit >= 3 ? 1 : 0;
+  return `${next.toFixed(digits)} ${units[unit]}`;
+}
+
+function formatBackupAge(value: string | null): string {
+  if (!value) return '暂无成功备份';
+  const ageMs = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(ageMs)) return '备份时间异常';
+  const hours = Math.max(0, ageMs / (60 * 60 * 1000));
+  if (hours < 1) return '1小时内';
+  if (hours < 48) return `${Math.floor(hours)}小时前`;
+  return `${Math.floor(hours / 24)}天前`;
+}
+
+const LOG_SOURCE_LABELS = {
+  docker: 'Docker',
+  openresty: 'OpenResty',
+  journal: 'journal',
+  none: '无',
+} as const;
+
 function MetricCard(props: {
   title: string;
   value: string;
@@ -171,6 +208,88 @@ export default function AdminOverviewPage() {
           </p>
         ) : null}
       </section>
+
+      {snapshot?.ops ? (
+        <section className="border-ink/15 bg-bgpaper/80 border border-dashed px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-ink-secondary text-xs tracking-[0.18em]">OPS</p>
+              <h3 className="text-ink mt-1 text-lg font-semibold">运维</h3>
+            </div>
+            <span className={opsTone(snapshot.ops.overallSeverity)}>
+              {snapshot.ops.collector.status === 'fresh'
+                ? snapshot.ops.overallSeverity === 'ok'
+                  ? '正常'
+                  : snapshot.ops.overallSeverity === 'warning'
+                    ? '需要关注'
+                    : '存在风险'
+                : snapshot.ops.collector.status === 'stale'
+                  ? '采集已过期'
+                  : '尚未采集'}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <p className="text-ink-secondary text-xs">存储</p>
+              <p className={`mt-1 text-sm font-semibold ${opsTone(snapshot.ops.disk.severity)}`}>
+                {snapshot.ops.disk.usedPercent == null
+                  ? '未知'
+                  : `${snapshot.ops.disk.usedPercent}% · 可用 ${formatBytes(snapshot.ops.disk.freeBytes)}`}
+              </p>
+              <p className="text-ink-secondary mt-1 text-xs">{snapshot.ops.disk.path}</p>
+            </div>
+
+            <div>
+              <p className="text-ink-secondary text-xs">内存</p>
+              <p className={`mt-1 text-sm font-semibold ${opsTone(snapshot.ops.memory.severity)}`}>
+                {snapshot.ops.memory.usedPercent == null
+                  ? '未知'
+                  : `${snapshot.ops.memory.usedPercent.toFixed(1)}% · 可用 ${formatBytes(snapshot.ops.memory.availableBytes)}`}
+              </p>
+              <p className="text-ink-secondary mt-1 text-xs">available memory</p>
+            </div>
+
+            <div>
+              <p className="text-ink-secondary text-xs">日志</p>
+              <p className={`mt-1 text-sm font-semibold ${opsTone(snapshot.ops.logs.severity)}`}>
+                {formatBytes(snapshot.ops.logs.totalBytes)}
+              </p>
+              <p className="text-ink-secondary mt-1 text-xs">
+                最大来源 {LOG_SOURCE_LABELS[snapshot.ops.logs.largestSource]}
+                {!snapshot.ops.logs.openrestyConfigured ? ' · OpenResty未配置采集' : ''}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-ink-secondary text-xs">数据库备份</p>
+              <p className={`mt-1 text-sm font-semibold ${opsTone(snapshot.ops.backup.severity)}`}>
+                {formatBackupAge(snapshot.ops.backup.lastSuccessAt)}
+              </p>
+              <p className="text-ink-secondary mt-1 text-xs">
+                {snapshot.ops.backup.lastSuccessSizeBytes == null
+                  ? snapshot.ops.backup.lastAttemptStatus === 'failed'
+                    ? '最近一次执行失败'
+                    : '等待首次成功备份'
+                  : `${formatBytes(snapshot.ops.backup.lastSuccessSizeBytes)}${
+                      snapshot.ops.backup.lastAttemptStatus === 'failed'
+                        ? ' · 最近一次执行失败'
+                        : ''
+                    }`}
+              </p>
+            </div>
+          </div>
+
+          {snapshot.ops.tls &&
+          (snapshot.ops.tls.severity === 'warning' ||
+            snapshot.ops.tls.severity === 'critical') ? (
+            <p className={`mt-4 text-xs ${opsTone(snapshot.ops.tls.severity)}`}>
+              HTTPS 证书 {snapshot.ops.tls.domain} 将在{' '}
+              {snapshot.ops.tls.daysRemaining ?? '未知'} 天后到期
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {snapshot?.presence ? (

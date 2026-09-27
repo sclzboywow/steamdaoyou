@@ -11,6 +11,7 @@ import {
 } from '@server/lib/drizzle/db';
 import { cultivators, feedbacks } from '@server/lib/drizzle/schema';
 import { getLlmMetricsSnapshot } from '@server/lib/llm/metricsStore';
+import { getHostOpsStatus } from '@server/lib/services/HostOpsStatusService';
 import { getMessageInfrastructureHealthStatus } from '@server/lib/mq/domainEventRegistry';
 import { getNatsHealthStatus } from '@server/lib/nats';
 import { getRedisHealthStatus } from '@server/lib/redis';
@@ -176,10 +177,12 @@ export async function getAdminOverviewSnapshot(
   const canFeedback = adminRoleHasCapability(role, 'feedback');
   const canModeration = adminRoleHasCapability(role, 'content_moderation');
   const canLlm = adminRoleHasCapability(role, 'llm_observe');
+  const canHostOps = role === 'super_admin' || role === 'ops';
 
-  const [system, presence, accounts, feedback, moderation, llm] =
+  const [system, ops, presence, accounts, feedback, moderation, llm] =
     await Promise.all([
       loadSystemStatus(),
+      canHostOps ? getHostOpsStatus() : Promise.resolve(null),
       canPresence ? loadPresence(now) : Promise.resolve(null),
       canAccounts ? loadAccounts(now) : Promise.resolve(null),
       canFeedback ? loadFeedback() : Promise.resolve(null),
@@ -192,6 +195,7 @@ export async function getAdminOverviewSnapshot(
     businessDate: getShanghaiDateKey(now),
     release: process.env.APP_RELEASE?.trim() || 'unknown',
     system,
+    ops,
     presence,
     accounts,
     feedback,
