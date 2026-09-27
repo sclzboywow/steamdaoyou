@@ -10,8 +10,8 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
   const [refresh, setRefresh] = useState(0);
   const [result, setResult] = useState<{ key: string; view: InventoryView }>();
   const [failure, setFailure] = useState<{ key: string; message: string }>();
-  const { kind, minRank, maxRank, materialType } = filter;
-  const key = `${owner}:${kind}:${minRank ?? ''}:${maxRank ?? ''}:${materialType ?? ''}:${page}`;
+  const { kind, search, minRank, maxRank, materialType } = filter;
+  const key = `${owner}:${kind}:${search ?? ''}:${minRank ?? ''}:${maxRank ?? ''}:${materialType ?? ''}:${page}`;
   const view = result?.key === key ? result.view : undefined;
   const error = failure?.key === key ? failure.message : '';
   useEffect(() => {
@@ -21,6 +21,7 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
       location: 'storage',
       kind,
       page: String(page),
+      search: search ?? '',
     });
     if (kind === 'material') {
       if (minRank) query.set('minRank', minRank);
@@ -48,6 +49,7 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
   }, [
     enabled,
     kind,
+    search,
     minRank,
     maxRank,
     materialType,

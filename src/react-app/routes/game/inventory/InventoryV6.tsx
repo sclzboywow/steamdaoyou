@@ -90,6 +90,7 @@ export default function InventoryV6() {
       location,
       page: String(page),
       kind: filter.kind,
+      search: filter.search ?? '',
     });
     if (filter.kind === 'material') {
       if (filter.minRank) query.set('minRank', filter.minRank);

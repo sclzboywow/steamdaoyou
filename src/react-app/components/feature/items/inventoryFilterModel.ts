@@ -25,6 +25,7 @@ export type InventoryKind = (typeof inventoryKinds)[number][0];
 export type MaterialType = (typeof INVENTORY_MATERIAL_TYPES)[number];
 export type InventoryFilter = {
   kind: InventoryKind;
+  search?: string;
   minRank?: Quality;
   maxRank?: Quality;
   materialType?: MaterialType;
@@ -34,6 +35,7 @@ export const defaultInventoryFilter: InventoryFilter = { kind: 'all' };
 
 export function inventoryFilterActive(filter: InventoryFilter) {
   return (
+    !!filter.search?.trim() ||
     filter.kind !== 'all' ||
     !!filter.minRank ||
     !!filter.maxRank ||
@@ -42,6 +44,8 @@ export function inventoryFilterActive(filter: InventoryFilter) {
 }
 
 export function matchesInventoryFilters(item: Item, filter: InventoryFilter) {
+  const search = filter.search?.trim().toLocaleLowerCase();
+  if (search && !item.name.toLocaleLowerCase().includes(search)) return false;
   const kind = itemDefinition(item.definitionId).kind;
   if (filter.kind !== 'all' && kind !== filter.kind) return false;
   if (filter.kind !== 'material') return true;

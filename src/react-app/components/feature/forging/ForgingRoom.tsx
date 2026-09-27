@@ -76,7 +76,7 @@ export function ForgingRoom() {
   const [facility, setFacility] = useState('');
   const [filter, setFilter] = useState<InventoryFilter>(defaultInventoryFilter);
   const session = useForgingSession(
-    facility === 'archive' ? { kind: 'blueprint' } : filter,
+    facility === 'archive' ? { ...filter, kind: 'blueprint' } : filter,
   );
   const [selected, setSelected] = useState<string>();
   const { pushToast } = useInkUI();
@@ -328,7 +328,7 @@ export function ForgingRoom() {
             ) : facility === 'archive' ? (
               <ForgingInventory
                 session={session}
-                filter={{ kind: 'blueprint' }}
+                filter={filter}
                 onFilter={setFilter}
                 fixedFilter
                 onChoose={(item) => {

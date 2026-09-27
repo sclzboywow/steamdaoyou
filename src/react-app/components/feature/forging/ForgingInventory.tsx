@@ -25,7 +25,9 @@ export function ForgingInventory({
   onChoose: (item: ForgeItem) => void;
   fixedFilter?: boolean;
 }) {
-  const activeFilter = fixedFilter ? { kind: 'blueprint' as const } : filter;
+  const activeFilter = fixedFilter
+    ? { ...filter, kind: 'blueprint' as const }
+    : filter;
   return (
     <CraftInventoryPanel
       source={session.source}

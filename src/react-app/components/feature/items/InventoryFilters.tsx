@@ -32,15 +32,29 @@ export function InventoryFilters({
     ? QUALITY_VALUES.indexOf(draft.maxRank)
     : QUALITY_VALUES.length - 1;
   function apply() {
+    const search = draft.search?.trim() || undefined;
+    const kind = kindDisabled ? value.kind : draft.kind;
     onChange(
       draft.kind === 'material'
-        ? draft
-        : { kind: kindDisabled ? value.kind : draft.kind },
+        ? { ...draft, kind, search }
+        : { kind, search },
     );
     setOpen(false);
   }
   return (
     <>
+      <input
+        aria-label="搜索物品"
+        placeholder="搜索物品"
+        value={value.search ?? ''}
+        className="border-ink/20 min-w-36 flex-1 border-b bg-transparent p-2 text-sm"
+        onChange={(event) =>
+          onChange({
+            ...value,
+            search: event.target.value || undefined,
+          })
+        }
+      />
       <InkButton
         onClick={() => {
           setDraft(value);
@@ -58,7 +72,9 @@ export function InventoryFilters({
             <InkButton
               onClick={() =>
                 setDraft(
-                  kindDisabled ? { kind: value.kind } : defaultInventoryFilter,
+                  kindDisabled
+                    ? { kind: value.kind, search: value.search }
+                    : { ...defaultInventoryFilter, search: value.search },
                 )
               }
             >
@@ -87,7 +103,10 @@ export function InventoryFilters({
               value={draft.kind}
               disabled={kindDisabled}
               onChange={(event) =>
-                setDraft({ kind: event.target.value as InventoryKind })
+                setDraft((current) => ({
+                  kind: event.target.value as InventoryKind,
+                  search: current.search,
+                }))
               }
               className="border-ink/20 w-full border bg-transparent p-2"
             >
