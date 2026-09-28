@@ -6,6 +6,7 @@ import { isSteamRuntime } from '@app/lib/runtime';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { AccountSettingsTab } from './components/AccountSettingsTab';
+import { CombatAutoStrategyTab } from './components/CombatAutoStrategyTab';
 import { ConnectionStatusTab } from './components/ConnectionStatusTab';
 import { GameSettingsTab } from './components/GameSettingsTab';
 import { ModelConfigTab } from './components/ModelConfigTab';
@@ -14,6 +15,7 @@ import { SteamBindingPanel } from './components/SteamBindingPanel';
 
 const SETTINGS_TABS = [
   { label: '游戏设置', value: 'game' },
+  { label: '自动战术', value: 'auto' },
   { label: '天地灵气', value: 'qi' },
   { label: '账号管理', value: 'account' },
   { label: '模型配置', value: 'llm' },
@@ -54,6 +56,7 @@ export default function SettingsPage() {
 
       <div className="pt-2">
         {activeTab === 'game' ? <GameSettingsTab /> : null}
+        {activeTab === 'auto' ? <CombatAutoStrategyTab /> : null}
         {activeTab === 'qi' ? <QiLogsTab /> : null}
         {activeTab === 'account' ? (
           <>

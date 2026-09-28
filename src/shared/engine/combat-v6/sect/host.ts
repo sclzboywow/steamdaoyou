@@ -9,6 +9,7 @@ import {
   type PveRestoredState,
 } from '../encounter/host';
 import { projectCharacterToCombatV6 } from '../projection';
+import { characterBattleSkills } from '../projection/character-battle-skills';
 import { daoyouRulesetV6 } from '../rules-daoyou';
 import { COMBAT_V6_PHASE_6D_VERSIONS } from '../version';
 import { presetEnemyAttrs } from '../encounter/preset-enemy';
@@ -16,7 +17,7 @@ import { presetEnemyAttrs } from '../encounter/preset-enemy';
 export const SECT_BATTLE_VERSIONS = {
   ...COMBAT_V6_PHASE_6D_VERSIONS,
   autoPolicyVersion: AUTO_POLICY_VERSION,
-  rulesetVersion: 'daoyou_rules_v10' as const,
+  rulesetVersion: 'daoyou_rules_v11' as const,
   contentVersion: 'combat-v6-sect-task-v1' as const,
 };
 export type SectBattleResourcePolicy = 'full' | 'persistent';
@@ -130,6 +131,7 @@ export class SectBattleHost extends CombatV6PveHostSession {
             .map((unit) => [unit.id!, { type: 'automatic' as const }]),
         ),
         sourceProjectionVersions: COMBAT_V6_PHASE_6D_VERSIONS,
+        playerAutoStrategy: source.input.autoStrategy,
       },
       restored,
       source.input.unitAppearances,
@@ -160,8 +162,9 @@ export function createSectBattleHost(
     resourcePolicy,
   });
   if (!projected.ok) throw new Error('请先完成新版宗门构筑并恢复气血');
+  const battleSkills = new Map(BEAST_SKILLS.map((skill) => [skill.id, skill]));
   const units = [
-    projected.unit,
+    characterBattleSkills(projected.unit, projected.skills, battleSkills),
     ...projectBeastRoster(
       player.beasts,
       projected.unit.id!,
@@ -169,7 +172,11 @@ export function createSectBattleHost(
       0,
       projected.unit.level,
     ),
-    ...opponent.units,
+    ...opponent.units.map((unit) =>
+      unit.kind === 'player'
+        ? characterBattleSkills(unit, opponent.skills, battleSkills)
+        : unit,
+    ),
   ];
   if (
     opponent.units.some((unit) => unit.side !== 1 || unit.benched) ||
@@ -195,11 +202,15 @@ export function createSectBattleHost(
     playerId: projected.unit.id!,
     resourcePolicy,
     input: structuredClone({
+      autoStrategy: player.autoStrategy,
       unitAppearances: { ...playerAppearances(player), ...opponent.unitAppearances },
       seed,
       versions: SECT_BATTLE_VERSIONS,
       units,
-      skills: merge([...BEAST_SKILLS, ...projected.skills, ...opponent.skills]),
+      skills: merge([
+        ...battleSkills.values(),
+        ...(opponent.units[0]?.kind === 'player' ? [] : opponent.skills),
+      ]),
       statusDefs: merge([...projected.statusDefs, ...opponent.statusDefs, ...BEAST_STATUS_DEFS]),
     }),
   });

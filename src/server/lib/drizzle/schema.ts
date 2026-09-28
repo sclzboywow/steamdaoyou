@@ -7,6 +7,7 @@ import type { TowerClaims } from '@shared/lib/tower/reward-state';
 import type { DivinationDice, DivinationDirection } from '@shared/lib/divination';
 import type { WildEncounter, WildRuntime } from '@shared/contracts/combatV6Wild';
 import type { BattleReplayV1 } from '@shared/contracts/battleReplay';
+import type { AutoStrategy } from '@shared/combat-v6/auto-strategy';
 import type { CombatV6ReplayV1 } from '@shared/contracts/combatV6Runtime';
 import type {
   ResourceChangeOperation,
@@ -126,6 +127,19 @@ export const cultivators = pgTable(
       table.spirit_stones,
     ),
   ],
+);
+
+export const cultivatorAutoStrategies = pgTable(
+  'wanjiedaoyou_cultivator_auto_strategies',
+  {
+    cultivatorId: uuid('cultivator_id')
+      .notNull()
+      .references(() => cultivators.id, { onDelete: 'cascade' }),
+    pathId: varchar('path_id', { length: 160 }).notNull(),
+    strategy: jsonb('strategy').$type<AutoStrategy>().notNull(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.cultivatorId, table.pathId] })],
 );
 
 // 个人灵田领域聚合：不再寄生 cultivators.game_settings。
@@ -1073,6 +1087,8 @@ export const combatReplayArchives = pgTable(
     outcome: varchar('outcome', { length: 24 }).notNull(),
     // Non-competitive battles retain settlement receipts without replay payloads.
     replay: jsonb('replay').$type<CombatV6ReplayV1>(),
+    shareCode: uuid('share_code'),
+    shareViewerCultivatorId: uuid('share_viewer_cultivator_id'),
     roundCount: integer('round_count').notNull().default(0),
     sides: jsonb('sides')
       .$type<[string[], string[]]>()
@@ -1086,6 +1102,7 @@ export const combatReplayArchives = pgTable(
       table.idempotencyKey,
     ),
     index('combat_replay_finished_idx').on(table.finishedAt),
+    uniqueIndex('combat_replay_share_code_uidx').on(table.shareCode),
   ],
 );
 

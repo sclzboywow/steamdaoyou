@@ -1,4 +1,5 @@
 import type { WildRuntimeSnapshot } from '@shared/engine/combat-v6/wild/host';
+import { AutoStrategySchema } from '@shared/combat-v6/auto-strategy';
 import type { WildResources } from '@shared/engine/combat-v6/wild/rules';
 import { z } from 'zod';
 import { DropPoolSchema, type DropPool } from '../drops';
@@ -103,10 +104,11 @@ export const WildRuntimeSchema = z
           .object({
             seed: z.number().int(),
             unitAppearances: z.record(z.string(), z.unknown()).optional(),
+            autoStrategy: AutoStrategySchema.optional(),
             versions: z
               .object({
                 engineVersion: z.literal('combat-v6'),
-                rulesetVersion: z.enum(['daoyou_rules_v8', 'daoyou_rules_v9', 'daoyou_rules_v10']),
+                rulesetVersion: z.enum(['daoyou_rules_v8', 'daoyou_rules_v9', 'daoyou_rules_v10', 'daoyou_rules_v11']),
                 contentVersion: z.literal('daoyou_wild_seeking_content_v2'),
                 projectionVersion: z.literal('wild_individual_v3'),
                 autoPolicyVersion: z.string().min(1).optional(),

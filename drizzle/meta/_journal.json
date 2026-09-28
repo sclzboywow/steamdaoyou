@@ -414,6 +414,20 @@
       "when": 1790344800000,
       "tag": "0058_shop_realm_gates",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1790563497713,
+      "tag": "0059_combat_replay_sharing",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1790578141727,
+      "tag": "0060_combat_auto_strategy",
+      "breakpoints": true
     }
   ]
 }
