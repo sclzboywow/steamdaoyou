@@ -233,6 +233,5 @@ env/steam.local.env
 .material-bootstrap-patch.json
 .steam-admin-v03-patch.json
 
-# Allow committed local DB dumps (private repo only)
-!db-dumps/
-!db-dumps/**
+# Local DB dumps
+db-dumps/
