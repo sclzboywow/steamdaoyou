@@ -10,8 +10,8 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
   const [refresh, setRefresh] = useState(0);
   const [result, setResult] = useState<{ key: string; view: InventoryView }>();
   const [failure, setFailure] = useState<{ key: string; message: string }>();
-  const { kind, search, minRank, maxRank, materialType } = filter;
-  const key = `${owner}:${kind}:${search ?? ''}:${minRank ?? ''}:${maxRank ?? ''}:${materialType ?? ''}:${page}`;
+  const { kind, search, minRank, maxRank, materialType, element } = filter;
+  const key = `${owner}:${kind}:${search ?? ''}:${minRank ?? ''}:${maxRank ?? ''}:${materialType ?? ''}:${element ?? ''}:${page}`;
   const view = result?.key === key ? result.view : undefined;
   const error = failure?.key === key ? failure.message : '';
   useEffect(() => {
@@ -27,6 +27,7 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
       if (minRank) query.set('minRank', minRank);
       if (maxRank) query.set('maxRank', maxRank);
       if (materialType) query.set('materialType', materialType);
+      if (element) query.set('element', element);
     }
     void combatV6Request<InventoryView>(`/api/combat-v6/inventory?${query}`, {
       signal: controller.signal,
@@ -53,6 +54,7 @@ export function useCraftStorage(filter: InventoryFilter, enabled: boolean) {
     minRank,
     maxRank,
     materialType,
+    element,
     owner,
     page,
     refresh,

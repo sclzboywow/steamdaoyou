@@ -174,6 +174,12 @@ export const gameDockGroups: GameNavGroup[] = [
         expandedDockLabel: '⚔️ 全部战绩',
       },
       {
+        id: 'journal',
+        sceneLabel: '修仙日志',
+        href: '/game/journal',
+        expandedDockLabel: '📜 修仙日志',
+      },
+      {
         id: 'dungeon-history',
         sceneLabel: '探险札记',
         href: '/game/dungeon/history',
@@ -255,7 +261,7 @@ export const gameDockGroups: GameNavGroup[] = [
         id: 'market-recycle',
         sceneLabel: '鉴宝回收',
         href: '/game/market/recycle',
-        expandedDockLabel: '⚖️ 鉴宝回收',
+        expandedDockLabel: '♻️ 鉴宝回收',
       },
       {
         id: 'tianjiao-vault',
@@ -298,6 +304,10 @@ export const gameDockGroups: GameNavGroup[] = [
         sceneLabel: '天骄榜',
         href: '/game/rankings',
         expandedDockLabel: '🏆 天骄榜',
+      },
+      {
+        id: 'hunt',
+        sceneLabel: '结伴讨伐',
       },
       {
         id: 'arena-sparring',

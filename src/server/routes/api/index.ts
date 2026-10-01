@@ -1,3 +1,5 @@
+import huntsRouter from './hunts.router';
+import playerJournalRouter from './player-journal.router';
 import divinationRouter from './divination.router';
 import { getPostgresHealthStatus } from '@server/lib/drizzle/db';
 import type { AppEnv } from '@server/lib/hono/types';
@@ -134,11 +136,13 @@ apiRouter.get('/ready-check', async (c) => {
 });
 
 apiRouter.route('/player', playerRouter);
+apiRouter.route('/player-journal', playerJournalRouter);
 apiRouter.route('/account', accountRouter);
 apiRouter.route('/admin', adminRouter);
 apiRouter.route('/alchemy', alchemyFormulasRouter);
 apiRouter.route('/auction', auctionRouter);
 apiRouter.route('/arena', arenaRouter);
+apiRouter.route('/hunts', huntsRouter);
 apiRouter.route('/battle-records', battleRecordsRouter);
 apiRouter.route('/black-market', blackMarketRouter);
 apiRouter.route('/captcha', captchaRouter);

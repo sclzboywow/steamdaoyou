@@ -428,6 +428,13 @@
       "when": 1790578141727,
       "tag": "0060_combat_auto_strategy",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1790763373538,
+      "tag": "0061_player_journal",
+      "breakpoints": true
     }
   ]
 }
